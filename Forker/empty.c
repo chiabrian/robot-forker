@@ -158,45 +158,95 @@ void convert_crsf(void)
         controls.ch2_percent = 1000;
     }
     controls.ch2_percent -= 1500;
-    
-    // Drive Priority
-    if( abs(controls.ch2_percent) >= abs(controls.ch1_percent)) {
-        // Forward
-        if( controls.ch2_percent >= 0)
-        {
-            controls.pwm1a = abs(controls.ch2_percent * 20);
-            controls.pwm1b = 0;
-            controls.pwm2a = abs(controls.ch2_percent * 20);
-            controls.pwm2b = 0;
-        }        
-        // Reverse
-        else
-        {
-            controls.pwm1a = 0;
-            controls.pwm1b = abs(controls.ch2_percent * 20);
-            controls.pwm2a = 0;
-            controls.pwm2b = abs(controls.ch2_percent * 20);
-        }
+}
+
+void set_drive_pwm(void)
+{    
+    int32_t left_wheel;
+    int32_t right_wheel;
+    int32_t max_mag;
+    // Differential Drive, Scale 500 by 20 to 10000
+    // U5 Left Wheel PWM1
+    left_wheel = controls.ch2_percent + controls.ch1_percent;
+    left_wheel *= 20;
+    // U6 Right Wheel PWM2
+    right_wheel = controls.ch2_percent - controls.ch1_percent;
+    right_wheel *= 20;
+
+    if(abs(left_wheel) >= abs(right_wheel)) {
+        max_mag = abs(left_wheel);
     }
-    // Turn Priority
     else {
-        // Turn Left
-        if( controls.ch1_percent >= 0)
-        {
-            controls.pwm1a = abs(controls.ch1_percent * 20);
-            controls.pwm1b = 0;
-            controls.pwm2a = 0;
-            controls.pwm2b = abs(controls.ch1_percent * 20);
-        }
-        // Turn Right
-        else
-        {
-            controls.pwm1a = 0;
-            controls.pwm1b = abs(controls.ch1_percent * 20);
-            controls.pwm2a = abs(controls.ch1_percent * 20);
-            controls.pwm2b = 0;
-        }   
+        max_mag = abs(right_wheel);
     }
+    if( max_mag > 10000)
+    {
+        left_wheel *= 10000;
+        left_wheel /= max_mag;
+        right_wheel *= 10000;
+        right_wheel /= max_mag;
+    }
+
+    if( left_wheel >= 0)
+    {
+        controls.pwm1a = abs(left_wheel);
+        controls.pwm1b = 0;
+    }
+    else {
+        controls.pwm1a = 0;
+        controls.pwm1b = abs(left_wheel);
+    }
+    
+    if( right_wheel >= 0)
+    {
+        controls.pwm2a = 0;
+        controls.pwm2b = abs(right_wheel);
+    }
+    else {
+        controls.pwm2a = abs(right_wheel);
+        controls.pwm2b = 0;
+    }
+
+    
+
+    // // Drive Priority
+    // if( abs(controls.ch2_percent) >= abs(controls.ch1_percent)) {
+    //     // Forward
+    //     if( controls.ch2_percent >= 0)
+    //     {
+    //         controls.pwm1a = abs(controls.ch2_percent * 20);
+    //         controls.pwm1b = 0;
+    //         controls.pwm2a = abs(controls.ch2_percent * 20);
+    //         controls.pwm2b = 0;
+    //     }        
+    //     // Reverse
+    //     else
+    //     {
+    //         controls.pwm1a = 0;
+    //         controls.pwm1b = abs(controls.ch2_percent * 20);
+    //         controls.pwm2a = 0;
+    //         controls.pwm2b = abs(controls.ch2_percent * 20);
+    //     }
+    // }
+    // // Turn Priority
+    // else {
+    //     // Turn Left
+    //     if( controls.ch1_percent >= 0)
+    //     {
+    //         controls.pwm1a = abs(controls.ch1_percent * 20);
+    //         controls.pwm1b = 0;
+    //         controls.pwm2a = 0;
+    //         controls.pwm2b = abs(controls.ch1_percent * 20);
+    //     }
+    //     // Turn Right
+    //     else
+    //     {
+    //         controls.pwm1a = 0;
+    //         controls.pwm1b = abs(controls.ch1_percent * 20);
+    //         controls.pwm2a = abs(controls.ch1_percent * 20);
+    //         controls.pwm2b = 0;
+    //     }   
+    // }
 
     if( controls.pwm1a != DL_TimerG_getCaptureCompareValue(PWM_U5_LEFT_INST,DL_TIMER_CC_0_INDEX)) {
         DL_TimerG_setCaptureCompareValue(PWM_U5_LEFT_INST, controls.pwm1a, DL_TIMER_CC_0_INDEX);
@@ -220,12 +270,9 @@ void convert_crsf(void)
         controls.pwm3a = 0;
         controls.pwm3b = 0;
     }
-
     if( controls.pwm3a != DL_TimerG_getCaptureCompareValue(PWM_U7_WEAPON_INST,DL_TIMER_CC_0_INDEX)) {
         DL_TimerG_setCaptureCompareValue(PWM_U7_WEAPON_INST, controls.pwm3a, DL_TIMER_CC_0_INDEX);
     }
-    
-
 }
 
 int main(void)
@@ -277,7 +324,8 @@ int main(void)
                 DL_TimerG_startCounter(PWM_U6_RIGHT_INST);
             }
             
-            convert_crsf();            
+            convert_crsf();
+            set_drive_pwm();   
         //     DL_TimerG_setCaptureCompareValue(PWM_U5_LEFT_INST, controls.channel_01, DL_TIMER_CC_0_INDEX);
         //     DL_TimerG_setCaptureCompareValue(PWM_U6_RIGHT_INST, controls.channel_02, DL_TIMER_CC_0_INDEX);
         //     DL_TimerG_setCaptureCompareValue(PWM_U7_WEAPON_INST, controls.channel_04, DL_TIMER_CC_0_INDEX);
@@ -288,6 +336,7 @@ int main(void)
             DL_TimerG_stopCounter(PWM_U7_WEAPON_INST);
             DL_TimerG_stopCounter(PWM_U5_LEFT_INST);
             DL_TimerG_stopCounter(PWM_U6_RIGHT_INST);
+            DL_GPIO_clearPins(LED_PORT, LED_Red_PIN);
         }
     }
 }
