@@ -135,6 +135,31 @@ void parse_rc_ch(void)
     controls.channel_03 = TICKS_TO_US(rc_ch_ptr->channel_03);
     controls.channel_04 = TICKS_TO_US(rc_ch_ptr->channel_04);
     controls.channel_05 = TICKS_TO_US(rc_ch_ptr->channel_05);
+
+    // Out of range set to 0
+    // Std range 988-2012us
+    // Extended Range 885-2115us
+    // Half Range 494-1006us
+    if( (controls.channel_01 > 2050) || (controls.channel_01 < 950) )
+    {
+    	controls.channel_01 = 1500;
+    }
+	if( (controls.channel_02 > 2050) || (controls.channel_02 < 950) )
+	{
+		controls.channel_02 = 1500;
+	}
+	if( (controls.channel_03 > 2050) || (controls.channel_03 < 950) )
+	{
+		controls.channel_03 = 1500;
+	}
+	if( (controls.channel_04 > 2050) || (controls.channel_04 < 950) )
+	{
+		controls.channel_04 = 1500;
+	}
+	if( (controls.channel_05 > 2050) || (controls.channel_05 < 950) )
+	{
+		controls.channel_05 = 1500;
+	}
 }
 
 
